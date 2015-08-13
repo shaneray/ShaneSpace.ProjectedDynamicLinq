@@ -1,3 +1,10 @@
+:: arguments
+if "%~1"=="" (
+  set version="1.0.0-local"
+) else (
+  set version=%1
+)
+
 :: Jump up a directory
 cd ..
 
@@ -12,5 +19,10 @@ erase *.nupkg
 
 :: pack everything in build folder
 for /f %%l in ('dir /b *.nuspec') do (
-    nuget.exe pack %%l
+    nuget pack %%l -version %version%
 )
+
+echo --------------------------------------------------------
+echo Build NuGet Package Script completed...
+
+echo To manually install this package:  Install-Package Boss.WebProxy -Source "%CD%"
