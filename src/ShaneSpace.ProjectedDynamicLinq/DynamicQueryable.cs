@@ -14,19 +14,19 @@ namespace ShaneSpace.ProjectedDynamicLinq
 {
     public static class DynamicQueryable
     {
-        public static IQueryable<T> Where<T>(this IQueryable<T> source, string predicate, params object[] values)
+        public static IQueryable<T> Where<T>(this IQueryable<T> source, IConfigurationProvider mapperConfigurationProvider, string predicate, params object[] values)
         {
-            return (IQueryable<T>)Where<T>((IQueryable)source, predicate, values);
+            return (IQueryable<T>)Where<T>((IQueryable)source, mapperConfigurationProvider, predicate, values);
         }
-        public static IQueryable<TSource> Where<TSource, TDestination>(this IQueryable<TSource> source, string predicate, params object[] values)
+        public static IQueryable<TSource> Where<TSource, TDestination>(this IQueryable<TSource> source, IConfigurationProvider mapperConfigurationProvider, string predicate, params object[] values)
         {
-            return (IQueryable<TSource>)Where<TDestination>((IQueryable)source, predicate, values);
+            return (IQueryable<TSource>)Where<TDestination>((IQueryable)source, mapperConfigurationProvider, predicate, values);
         }
-        private static IQueryable Where<TDestination>(this IQueryable source, string predicate, params object[] values)
+        private static IQueryable Where<TDestination>(this IQueryable source, IConfigurationProvider mapperConfigurationProvider, string predicate, params object[] values)
         {
             if (source == null) throw new ArgumentNullException("source");
             if (predicate == null) throw new ArgumentNullException("predicate");
-            LambdaExpression lambda = DynamicExpression.ParseLambda<TDestination>(source.ElementType, typeof(bool), predicate, values);
+            LambdaExpression lambda = DynamicExpression.ParseLambda<TDestination>(mapperConfigurationProvider, source.ElementType,  typeof(bool), predicate, values);
             return source.Provider.CreateQuery(
                 Expression.Call(
                     typeof(Queryable), "Where",
@@ -34,21 +34,21 @@ namespace ShaneSpace.ProjectedDynamicLinq
                     source.Expression, Expression.Quote(lambda)));
         }
 
-        public static IQueryable<T> OrderBy<T>(this IQueryable<T> source, string ordering, params object[] values)
+        public static IQueryable<T> OrderBy<T>(this IQueryable<T> source, IConfigurationProvider mapperConfigurationProvider, string ordering, params object[] values)
         {
-            return (IQueryable<T>)OrderBy<T>((IQueryable)source, ordering, values);
+            return (IQueryable<T>)OrderBy<T>((IQueryable)source, mapperConfigurationProvider, ordering, values);
         }
-        public static IQueryable<TSource> OrderBy<TSource, TDestination>(this IQueryable<TSource> source, string ordering, params object[] values)
+        public static IQueryable<TSource> OrderBy<TSource, TDestination>(this IQueryable<TSource> source, IConfigurationProvider mapperConfigurationProvider, string ordering, params object[] values)
         {
-            return (IQueryable<TSource>)OrderBy<TDestination>((IQueryable)source, ordering, values);
+            return (IQueryable<TSource>)OrderBy<TDestination>((IQueryable)source, mapperConfigurationProvider, ordering, values);
         }
-        public static IQueryable OrderBy<TDestDest>(this IQueryable source, string ordering, params object[] values)
+        public static IQueryable OrderBy<TDestDest>(this IQueryable source, IConfigurationProvider mapperConfigurationProvider, string ordering, params object[] values)
         {
             if (source == null) throw new ArgumentNullException("source");
             if (ordering == null) throw new ArgumentNullException("ordering");
             ParameterExpression[] parameters = new ParameterExpression[] {
                 Expression.Parameter(source.ElementType, "") };
-            ExpressionParser<TDestDest> parser = new ExpressionParser<TDestDest>(parameters, ordering, values);
+            ExpressionParser<TDestDest> parser = new ExpressionParser<TDestDest>(parameters, ordering, values, mapperConfigurationProvider);
             IEnumerable<DynamicOrdering> orderings = parser.ParseOrdering();
             Expression queryExpr = source.Expression;
             string methodAsc = "OrderBy";
@@ -111,14 +111,14 @@ namespace ShaneSpace.ProjectedDynamicLinq
 
     public static class DynamicExpression
     {
-        public static LambdaExpression ParseLambda<TDest>(Type itType, Type resultType, string expression, params object[] values)
+        public static LambdaExpression ParseLambda<TDest>(IConfigurationProvider mapperConfigurationProvider, Type itType, Type resultType, string expression, params object[] values)
         {
-            return ParseLambda<TDest>(new ParameterExpression[] { Expression.Parameter(itType, "") }, resultType, expression, values);
+            return ParseLambda<TDest>(mapperConfigurationProvider, new ParameterExpression[] { Expression.Parameter(itType, "") }, resultType, expression, values);
         }
 
-        public static LambdaExpression ParseLambda<TDest>(ParameterExpression[] parameters, Type resultType, string expression, params object[] values)
+        public static LambdaExpression ParseLambda<TDest>(IConfigurationProvider mapperConfigurationProvider, ParameterExpression[] parameters, Type resultType, string expression, params object[] values)
         {
-            ExpressionParser<TDest> parser = new ExpressionParser<TDest>(parameters, expression, values);
+            ExpressionParser<TDest> parser = new ExpressionParser<TDest>(parameters, expression, values, mapperConfigurationProvider);
             return Expression.Lambda(parser.Parse(resultType), parameters);
         }
 
@@ -565,10 +565,12 @@ namespace ShaneSpace.ProjectedDynamicLinq
         int textLen;
         char ch;
         Token token;
+        IConfigurationProvider mapperConfiguration;
 
-        public ExpressionParser(ParameterExpression[] parameters, string expression, object[] values)
+        public ExpressionParser(ParameterExpression[] parameters, string expression, object[] values, IConfigurationProvider mapperConfigurationProvider)
         {
             if (expression == null) throw new ArgumentNullException("expression");
+            mapperConfiguration = mapperConfigurationProvider;
             if (keywords == null) keywords = CreateKeywords();
             symbols = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             literals = new Dictionary<Expression, string>();
@@ -1217,7 +1219,7 @@ namespace ShaneSpace.ProjectedDynamicLinq
             MemberInfo member;
             // Check for Automapper map
             var destinationType = typeof(TDest);
-            var mappingConfig = Mapper.FindTypeMapFor(type, destinationType);
+            var mappingConfig = mapperConfiguration.FindTypeMapFor(type, destinationType);
             if (mappingConfig != null)
             {
                 var propMaps = mappingConfig.GetPropertyMaps().ToList();
