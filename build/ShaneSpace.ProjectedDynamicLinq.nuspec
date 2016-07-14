@@ -2,16 +2,16 @@
 <package >
   <metadata>
     <id>ShaneSpace.ProjectedDynamicLinq</id>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
     <title>ShaneSpace.ProjectedDynamicLinq</title>
     <description>This is a modified copy of the Microsoft assembly for the .Net 4.0 Dynamic language functionality to work with Automapper and projections.</description>
     <authors>Shane Ray</authors>
     <owners>Shane Ray</owners>
     <projectUrl>https://github.com/shaneray/ShaneSpace.ProjectedDynamicLinq</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <copyright>Copyright 2015 Shane Ray</copyright>
+    <copyright>Copyright 2016 Shane Ray</copyright>
     <dependencies>
-      <dependency id="AutoMapper" version="3.3.1" />
+      <dependency id="AutoMapper" version="5.0.0" />
     </dependencies>
   </metadata>
   <files>
