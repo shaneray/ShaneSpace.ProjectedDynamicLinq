@@ -24,5 +24,3 @@ for /f %%l in ('dir /b *.nuspec') do (
 
 echo --------------------------------------------------------
 echo Build NuGet Package Script completed...
-
-echo To manually install this package:  Install-Package Boss.WebProxy -Source "%CD%"
